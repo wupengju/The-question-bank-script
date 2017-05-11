@@ -12,7 +12,6 @@
 	/**
 	 * 过滤输入的参数并进行验证
 	 * @param {[Object]} options 构造Answer实例对象的相关配置参数
-	 * options = {arrFrames: [], validateStr: '', chapterSelector: '' }
 	 */
 	var Answer = function (options) {
 
@@ -235,7 +234,7 @@
 	/*
 	* 开启自动刷题
 	 */
-	Answer.fn.start = function (duringTime) {
+	Answer.fn.start = Answer.fn.reStart = function (duringTime) {
 
 		this.autoGetAnswer(duringTime);
 	};
@@ -253,6 +252,14 @@
 		  }
 	};
 
+	/*
+	* 提供关闭(暂停)脚本执行接口
+	 */
+	Answer.fn.stop = Answer.fn.pause = function () {
+
+		  clearInterval(this.timer);
+	};
+
 	// test
 	var options = {
 		arrFrames: ['topmain', 'main'], 
@@ -263,6 +270,8 @@
 	};
 
 	var answer = Answer(options);
-	answer.start(3000);
+	answer.start(3000); // 默认自动开启脚本执行
+
+	window.answer = answer;
 
 }(window));
