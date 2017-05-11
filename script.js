@@ -15,35 +15,10 @@
 	 */
 	var Answer = function (options) {
 
-		var ret = [],
-				checkSign = false;
+		options = Answer.detectOptions(options);
 
-		if (!Answer.detectDataTypes(options, 'Object')) {
-			console.log('请传入对象参数.');
-			return false;
-		}
-
-		ret.push(Answer.detectDataTypes('arrFrames' in options && options.arrFrames, 'Array'));
-		ret.push(Answer.detectDataTypes('validateStr' in options && options.validateStr, 'String'));
-
-		checkSign = ret.every(function (item) {
-			return item === true ? true : false;
-		});
-
-		function setMainFrame(arrFrames) {
-			var curFrames = window;
-			for (var i = 0, len = arrFrames.length; i < len; i++) {
-				curFrames = curFrames.frames[ arrFrames[ i ] ];
-			}
-			return curFrames;
-		}
-
-		if (checkSign) {
-			options.$mainFrame = setMainFrame(options.arrFrames);
+		if (options !== false) {
 			return new Answer.fn.init(options);
-		} else {
-			console.log('传入的参数不符合规范.');
-			return false;
 		}
 	};
 
@@ -52,7 +27,7 @@
 		version: '0.1.1',
 		init: function (options) {
 			this.timer = null; // 定时器
-			this.$mainFrame = options.$mainFrame;
+			this.$mainFrame = this.setMainFrame(options.arrFrames);
 			this.mainFrameWindow = this.$mainFrame.window;
 			this.validateStr = options.validateStr; // 验证章节结束的字符串
 			this.$chapter = this.mainFrameWindow.document.getElementById(options.chapterSelector); // 章的DOM对象
@@ -68,6 +43,31 @@
 
 	Answer.fn.init.prototype = Answer.fn;
 
+	// 检测构造函数的配置参数
+	Answer.detectOptions = function (options) {
+		var ret = [],
+				checkSign = false;
+
+		if (!Answer.detectDataTypes(options, 'Object')) {
+			console.log('请传入对象参数.');
+			return false;
+		}
+
+		ret.push(Answer.detectDataTypes('arrFrames' in options && options.arrFrames, 'Array'));
+		ret.push(Answer.detectDataTypes('validateStr' in options && options.validateStr, 'String'));
+
+		checkSign = ret.every(function (item) {
+			return item === true ? true : false;
+		});
+
+		if (checkSign) {
+			return options;
+		} else {
+			console.log('传入的参数不符合规范.');
+			return false;
+		}
+	};
+
 	// 检测数据类型
 	Answer.detectDataTypes = function (value, type) {
 
@@ -81,6 +81,18 @@
 		} else {
 		  $element.onchange();
 		}
+	};
+
+
+	/*
+	* 设置$mainFrame属性
+	 */
+	Answer.fn.setMainFrame = function (arrFrames) {
+		var curFrames = window;
+		for (var i = 0, len = arrFrames.length; i < len; i++) {
+			curFrames = curFrames.frames[ arrFrames[ i ] ];
+		}
+		return curFrames;
 	};
 
 	/*
