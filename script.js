@@ -234,14 +234,8 @@
 	/*
 	* 开启自动刷题
 	 */
-	Answer.fn.start = Answer.fn.reStart = function (duringTime) {
-		
-		if (Answer.detectDataTypes(duringTime, 'Number')) {
-			duringTime = duringTime > 3000 ? 3000 : duringTime;
-			duringTime = duringTime < 2000 ? 2000 : duringTime;
-		}
-
-		this.autoGetAnswer(duringTime);
+	Answer.fn.start = Answer.fn.reStart = function () {
+		this.autoGetAnswer(3000);
 	};
 
 
@@ -275,7 +269,7 @@
 	};
 
 	var answer = Answer(options);
-	answer.start(3000); // 默认自动开启脚本执行
+	answer.start(); // 默认自动开启脚本执行
 
 	window.answer = answer;
 
