@@ -96,17 +96,94 @@
 	};
 
 	/*
+	* 获取当前章节【this.curChapterIndex】的题目总数
+	 */
+	Answer.fn.getChapterProNum = function (curChapterValue, index) {
+
+		var chapterProNum = 0,
+				_self = this;
+
+		function getCProgramIDPromise(CProgramID) {
+
+			return new Promise(function (resolve, reject) {
+				var strTestParam = '',
+						resObj = null;
+
+				try {
+		  		strTestParam = '<cTest><cProgram>' + CProgramID + '</cProgram><cQuestionIndex>0</cQuestionIndex></cTest>';
+		  		resObj = _self.$mainFrame.CExam.CPractice.GetJSONTest(strTestParam);
+		  		resObj = JSON.parse(resObj.value);
+		  		resolve(parseInt(resObj.CQuestion.CQuestionCount, 10));
+				} catch(e) {
+					reject(e);
+				}
+			});
+		}
+
+		var p = new Promise(function (resolve, reject) {
+			try {
+
+		  		var cChapterID = curChapterValue + '';
+		  		var resObj = _self.$mainFrame.CExam.CPractice.GetJSONProgramList(cChapterID);
+
+		  		resolve(JSON.parse(resObj.value));
+
+			} catch(e) {
+				reject(e);
+			}
+		});
+
+		p.then(function (cChapterIDObj) {
+				console.log(cChapterIDObj);
+				return cChapterIDObj;
+			})
+			.then(function (cChapterIDObj) {
+
+				var arrCProgramIDPromise = [];
+
+				for (var i = 0, len = cChapterIDObj.length; i < len; i++) {
+		  		arrCProgramIDPromise.push(getCProgramIDPromise(cChapterIDObj[ i ].CProgramID));
+	  		}
+
+				Promise.all(arrCProgramIDPromise)
+							 .then(function () {
+							 		var arrArgs = [].slice.apply(arguments);
+							 		arrArgs = arrArgs.reduce(function (total, curItem) {
+							 			return total + curItem;
+							 		});
+							 		
+							 		chapterProNum = arrArgs.reduce(function (total, curItem) {
+							 			return total + curItem;
+							 		});
+
+							 		_self.arrChapters[ index ].chapterProNum = chapterProNum;
+							 		// console.log(_self.arrChapters);
+							 })
+							 .catch(function (e) {
+							   throw e;
+							 });
+			})
+			.catch(function (e) {
+				console.log(e);
+			});
+	}; 
+
+	/*
 	* 设置arrChapters属性
 	 */
 	Answer.fn.setArrChapters = function () {
 		var curChapterOption = null,
-				arrRets = [];
+				arrRets = [],
+				curChapterValue = 0;
 
 		for (var i = 0, len = this.$chapterOptions.length; i < len; i++) {
 			curChapterOption = this.$chapterOptions[ i ];
+			curChapterValue = parseInt(curChapterOption.value, 10);
+
 			arrRets.push({
-				chapterText: curChapterOption.innerText,
-				numValue: parseInt(curChapterOption.value, 10),
+				chapterName: curChapterOption.innerText,
+				chapterValue: curChapterValue,
+				chapterProNum: i === 0 ? this.getChapterProNum(curChapterValue, i) : 0,
 				finishSign: false
 			});
 		}
@@ -123,7 +200,7 @@
 				retNum = 0;
 
 		this.arrChapters.forEach(function (item, index) {
-			retNum = item.numValue === curChapterValue ? index : retNum;
+			retNum = item.chapterValue === curChapterValue ? index : retNum;
 		});
 
 		var _self = this;
@@ -150,12 +227,15 @@
 				_self = this;
 
     var p = new Promise(function (resolve, reject) {
+    	var strTestParam = '',
+    			resObj = null,
+    			ret = null;
 
   		try {
     	  for (var i = 0; i <= 3; i++) {
-	    		var strTestParam = '<cTestParam><cQuestion>' + _self.$mainFrame.cQuestionID.value + '</cQuestion><cUserAnswer>' + arrRets[ i ] + '</cUserAnswer></cTestParam>';
-	    		var resObj = _self.$mainFrame.CExam.CPractice.IsOrNotTrue(strTestParam);
-	    		var ret = null;
+	    		strTestParam = '<cTestParam><cQuestion>' + _self.$mainFrame.cQuestionID.value + '</cQuestion><cUserAnswer>' + arrRets[ i ] + '</cUserAnswer></cTestParam>';
+	    		resObj = _self.$mainFrame.CExam.CPractice.IsOrNotTrue(strTestParam);
+	    		ret = null;
 
 	    		if(resObj.value) {
 	    		  if (!_self.validateEnd()) {
@@ -214,7 +294,7 @@
 	 */
 	Answer.fn.toNextChapter = function () {
 		this.curChapterIndex++;
-		this.$chapter.value = this.arrChapters[ this.curChapterIndex ].numValue;
+		this.$chapter.value = this.arrChapters[ this.curChapterIndex ].chapterValue;
 		this.$chapterOptions[ this.curChapterIndex ].selected = true;
 
 		Answer.triggerChange(this.$chapter);
