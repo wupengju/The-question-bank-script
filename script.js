@@ -43,6 +43,10 @@
 
 	Answer.fn.init.prototype = Answer.fn;
 
+	/**
+	 * 添加工具方法
+	 */
+
 	// 添加默认参数
 	Answer.addDefaultOptions = function (options, arrOptionsKeys) {
 
@@ -131,6 +135,15 @@
 		}
 	};
 
+
+	/**
+	 * 添加实例方法
+	 */
+
+	// 打印自动刷题脚本的使用说明
+	Answer.fn.printScriptUsage = function () {
+		console.log('/*\n* \u81EA\u52A8\u5237\u9898\u811A\u672C\u7684\u4F7F\u7528\u8BF4\u660E\n* \u542F\u52A8\u6267\u884C\u811A\u672C\uFF1A\n* \t1. answer.start() \uFF1A\u5747\u4F7F\u7528\u9ED8\u8BA4\u53C2\u6570\u5237\u9898\u7AE0\u8282\u6570\u4ECE\u5F53\u524D\u7AE0\u8282\u76F4\u5230\u5237\u5B8C\u4E3A\u6B62 \u548C \u6B63\u786E\u7387\u4E3A 95%\n* \t2. answer.start(\'1\', \'2\') \uFF1A\u81EA\u5B9A\u4E49\u5237\u9898\u7AE0\u8282\u6570 1-2\n* \t3. answer.start(90) \uFF1A\u81EA\u5B9A\u4E49\u6B63\u786E\u7387\u4F4D 90%\n* \t4. answer.start([\'1\', \'2\'], 90) \uFF1A\u81EA\u5B9A\u4E49\u5237\u9898\u7AE0\u8282\u6570 1-2 \u548C \u81EA\u5B9A\u4E49\u6B63\u786E\u7387\u4F4D 90%\n* \u91CD\u65B0\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.restart();\n* \u6682\u505C\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.pause();\n* \u505C\u6B62\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.stop();\n*/');
+	};
 
 	// 设置$mainFrame属性
 	Answer.fn.setMainFrame = function (arrFrames) {
