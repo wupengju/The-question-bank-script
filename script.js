@@ -122,7 +122,7 @@
 		return Object.prototype.toString.apply(value) === '[object ' + type + ']' ? true : false;
 	};
 
-	// 兼容触发selelct元素的change事件
+	// 兼容触发selelct元素的change事件——章节选择是select
 	Answer.triggerChange = function ($element) {
 		if ($element.fireEvent) {
 		  $element.fireEvent('onchange');
@@ -132,9 +132,7 @@
 	};
 
 
-	/*
-	* 设置$mainFrame属性
-	 */
+	// 设置$mainFrame属性
 	Answer.fn.setMainFrame = function (arrFrames) {
 		var curFrames = window;
 		for (var i = 0, len = arrFrames.length; i < len; i++) {
@@ -143,9 +141,7 @@
 		return curFrames;
 	};
 
-	/*
-	* 获取当前章节【this.curChapterIndex】的题目总数
-	 */
+	// 获取当前章节【this.curChapterIndex】的题目总数
 	Answer.fn.getChapterProNum = function (curChapterValue, index) {
 
 		var chapterProNum = 0,
@@ -215,9 +211,7 @@
 			});
 	}; 
 
-	/*
-	* 设置arrChapters属性
-	 */
+	// 设置arrChapters属性
 	Answer.fn.setArrChapters = function () {
 		var curChapterOption = null,
 				arrRets = [],
@@ -238,10 +232,7 @@
 		return arrRets;
 	};
 
-
-	/*
-	* 设置curChapterIndex属性
-	 */
+	// 设置curChapterIndex属性
 	Answer.fn.setCurChapterIndex = function () {
 		var curChapterValue = parseInt(this.$chapter.value, 10),
 				retNum = 0;
@@ -259,16 +250,13 @@
 		return retNum;
 	};
 
-	/*
-	* 更新curChapterIndex属性
-	 */
+	// 更新curChapterIndex属性
 	Answer.fn.rewriteCurChapterIndex = function () {
+
 		this.curChapterIndex = this.setCurChapterIndex();
 	};
 
-	/*
-	* 遍历查询，得出正确的答案再进行处理
-	 */
+	// 遍历查询，得出正确的答案再进行处理
 	Answer.fn.getAnswer = function () {
 		var arrRets = ['A', 'B', 'C', 'D'],
 				_self = this;
@@ -314,10 +302,7 @@
     	});
 	};
 
-
-	/*
-	* 开启自动查询定时器
-	 */
+	// 开启自动查询定时器
 	Answer.fn.autoGetAnswer = function (duringTime) {
 		var _self = this;
 
@@ -326,19 +311,13 @@
 		}, duringTime);
 	};
 
-
-	/*
-	* 验证一章的自动刷题是否结束
-	 */
+	// 验证一章的自动刷题是否结束
 	Answer.fn.validateEnd = function () {
 
 		return this.$promptInfo.innerText.indexOf(this.validateStr) > -1 ? true : false;
 	};
 
-
-	/*
-	* 跳转到下一个章节
-	 */
+	// 跳转到下一个章节
 	Answer.fn.toNextChapter = function () {
 		this.curChapterIndex++;
 		this.$chapter.value = this.arrChapters[ this.curChapterIndex ].chapterValue;
@@ -358,10 +337,7 @@
 	// 触发章的onchange事件后自动更新了小节，所以这个方法没用了~~~
 	Answer.fn.changeSection = function () {};
 
-
-	/*
-	* 处理有错误的章节，不能进入正常自动刷题流程
-	 */
+	// 处理有错误的章节，不能进入正常自动刷题流程
 	Answer.fn.dealErrorChapter = function () {
 		var curChapterIndex = this.curChapterIndex;
 		if (this.arrErrorChapters.indexOf(++curChapterIndex) > -1) {
@@ -369,18 +345,13 @@
 		}
 	};
 
-
-	/*
-	* 开启自动刷题
-	 */
+	// 开启自动刷题
 	Answer.fn.start = Answer.fn.reStart = function () {
+
 		this.autoGetAnswer(3000);
 	};
 
-
-	/*
-	* 结束自动刷题
-	 */
+	// 结束自动刷题
 	Answer.fn.end = function () {
 
 		  if (++this.curChapterIndex === this.$chapterOptions.length && _self.validateEnd()) {
@@ -390,15 +361,13 @@
 		  }
 	};
 
-	/*
-	* 提供关闭(暂停)脚本执行接口
-	 */
+	// 提供关闭(暂停)脚本执行接口
 	Answer.fn.stop = Answer.fn.pause = function () {
 
 		  clearInterval(this.timer);
 	};
 
-	// test
+	// code
 	var options = {
 		arrFrames: ['topmain', 'main'], 
 		validateStr: '此章节下的程序已读取结束',
