@@ -141,6 +141,51 @@
 		return curFrames;
 	};
 
+	// 设置arrChapters属性
+	Answer.fn.setArrChapters = function () {
+		var curChapterOption = null,
+				arrRets = [],
+				curChapterValue = 0;
+
+		for (var i = 0, len = this.$chapterOptions.length; i < len; i++) {
+			curChapterOption = this.$chapterOptions[ i ];
+			curChapterValue = parseInt(curChapterOption.value, 10);
+
+			arrRets.push({
+				chapterName: curChapterOption.innerText,
+				chapterValue: curChapterValue,
+				chapterProNum: i === 0 ? this.getChapterProNum(curChapterValue, i) : 0, // 默认是从第一章开始，就默认获取第一章的总题数
+				finishSign: false
+			});
+		}
+
+		return arrRets;
+	};
+
+	// 设置curChapterIndex属性
+	Answer.fn.setCurChapterIndex = function () {
+		var curChapterValue = parseInt(this.$chapter.value, 10),
+				retNum = 0;
+
+		this.arrChapters.forEach(function (item, index) {
+			retNum = item.chapterValue === curChapterValue ? index : retNum;
+		});
+
+		var _self = this;
+		this.$chapter.addEventListener('change', function () {
+			_self.rewriteCurChapterIndex();
+			_self.dealErrorChapter();
+		});
+
+		return retNum;
+	};
+
+	// 更新curChapterIndex属性
+	Answer.fn.rewriteCurChapterIndex = function () {
+
+		this.curChapterIndex = this.setCurChapterIndex();
+	};
+
 	// 获取当前章节【this.curChapterIndex】的题目总数
 	Answer.fn.getChapterProNum = function (curChapterValue, index) {
 
@@ -210,51 +255,6 @@
 				console.log(e);
 			});
 	}; 
-
-	// 设置arrChapters属性
-	Answer.fn.setArrChapters = function () {
-		var curChapterOption = null,
-				arrRets = [],
-				curChapterValue = 0;
-
-		for (var i = 0, len = this.$chapterOptions.length; i < len; i++) {
-			curChapterOption = this.$chapterOptions[ i ];
-			curChapterValue = parseInt(curChapterOption.value, 10);
-
-			arrRets.push({
-				chapterName: curChapterOption.innerText,
-				chapterValue: curChapterValue,
-				chapterProNum: i === 0 ? this.getChapterProNum(curChapterValue, i) : 0, // 默认是从第一章开始，就默认获取第一章的总题数
-				finishSign: false
-			});
-		}
-
-		return arrRets;
-	};
-
-	// 设置curChapterIndex属性
-	Answer.fn.setCurChapterIndex = function () {
-		var curChapterValue = parseInt(this.$chapter.value, 10),
-				retNum = 0;
-
-		this.arrChapters.forEach(function (item, index) {
-			retNum = item.chapterValue === curChapterValue ? index : retNum;
-		});
-
-		var _self = this;
-		this.$chapter.addEventListener('change', function () {
-			_self.rewriteCurChapterIndex();
-			_self.dealErrorChapter();
-		});
-
-		return retNum;
-	};
-
-	// 更新curChapterIndex属性
-	Answer.fn.rewriteCurChapterIndex = function () {
-
-		this.curChapterIndex = this.setCurChapterIndex();
-	};
 
 	// 遍历查询，得出正确的答案再进行处理
 	Answer.fn.getAnswer = function () {
@@ -334,7 +334,7 @@
 		} 
 	};
 
-	// 触发章的onchange事件后自动更新了小节，所以这个方法没用了~~~
+	// 触发章的onchange事件后自动更新了小节，所以不再需要自定义更新小节
 	Answer.fn.changeSection = function () {};
 
 	// 处理有错误的章节，不能进入正常自动刷题流程
