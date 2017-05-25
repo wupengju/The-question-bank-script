@@ -37,6 +37,10 @@
 			this.curChapterIndex = this.setCurChapterIndex(); // 正在刷的题目的章节数
 			this.arrErrorChapters = options.arrErrorChapters || []; // 有错误章节项目的序列数组
 
+			this.startChapter = 0; // 自定义刷题开始章数
+			this.endChapter = null; // 自定义刷题结束章数
+			this.correctRate = 9.5; // 自定义刷题正确率
+
 			return this;
 		}
 	};
@@ -142,6 +146,7 @@
 
 	// 打印自动刷题脚本的使用说明
 	Answer.fn.printScriptUsage = function () {
+
 		console.log('/*\n* \u81EA\u52A8\u5237\u9898\u811A\u672C\u7684\u4F7F\u7528\u8BF4\u660E\n* \u542F\u52A8\u6267\u884C\u811A\u672C\uFF1A\n* \t1. answer.start() \uFF1A\u5747\u4F7F\u7528\u9ED8\u8BA4\u53C2\u6570\u5237\u9898\u7AE0\u8282\u6570\u4ECE\u5F53\u524D\u7AE0\u8282\u76F4\u5230\u5237\u5B8C\u4E3A\u6B62 \u548C \u6B63\u786E\u7387\u4E3A 95%\n* \t2. answer.start(\'1\', \'2\') \uFF1A\u81EA\u5B9A\u4E49\u5237\u9898\u7AE0\u8282\u6570 1-2\n* \t3. answer.start(90) \uFF1A\u81EA\u5B9A\u4E49\u6B63\u786E\u7387\u4F4D 90%\n* \t4. answer.start([\'1\', \'2\'], 90) \uFF1A\u81EA\u5B9A\u4E49\u5237\u9898\u7AE0\u8282\u6570 1-2 \u548C \u81EA\u5B9A\u4E49\u6B63\u786E\u7387\u4F4D 90%\n* \u91CD\u65B0\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.restart();\n* \u6682\u505C\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.pause();\n* \u505C\u6B62\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.stop();\n*/');
 	};
 
@@ -358,12 +363,6 @@
 		}
 	};
 
-	// 开启自动刷题
-	Answer.fn.start = Answer.fn.reStart = function () {
-
-		this.autoGetAnswer(3000);
-	};
-
 	// 结束自动刷题
 	Answer.fn.end = function () {
 
@@ -374,10 +373,55 @@
 		  }
 	};
 
+	// 开启自动刷题
+	Answer.fn.start = function () {
+
+		function detectArguments(arg, len) {
+
+			for (var i = 0; i < len; i++) {
+				if (!Answer.detectDataTypes(arg[ i ], 'Number') && (arg[ len ] ? Answer.detectDataTypes(arg[ len ], 'Number') : false)) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		// answer.start()
+		if (arguments.length === 0) {
+			// this.autoGetAnswer(3000);
+			
+			return;
+		} else if (detectArguments(arguments, 1)) { // answer.start(90)
+			if (arguments[ 0 ] >= 90 && arguments[ 0 ] <= 99) {
+				console.log('answer.start(90)');
+				return;
+			}
+		} else if (detectArguments(arguments, 2)) { // answer.start(1, 2)
+			console.log('answer.start(1, 2)');
+		} else if (detectArguments(arguments, 3)) { // answer.start(1, 2, 90)
+			console.log('answer.start(1, 2, 90)');
+		} else {
+			console.log('请输入符合规范的开始调用参数.');
+			return false;
+		}
+
+		
+		// this.startChapter = 0; // 自定义刷题开始章数
+		// this.endChapter = 0; // 自定义刷题结束章数
+		// this.correctRate = 0; // 自定义刷题正确率
+		
+	};
+
+	// 重新开启自动刷题
+	Answer.fn.reStart = function () {
+
+		this.autoGetAnswer(3000);
+	};
 	// 提供关闭(暂停)脚本执行接口
 	Answer.fn.stop = Answer.fn.pause = function () {
 
-		  clearInterval(this.timer);
+		clearInterval(this.timer);
 	};
 
 	// code
@@ -400,7 +444,8 @@
 	// 不传参。采用默认参数
 	// var answer = Answer(); 
 
-	answer.start(); // 默认自动开启脚本执行
+	// answer.start(); // 默认自动开启脚本执行
+	answer.printScriptUsage(); // 打印自动刷题脚本的使用说明
 
 	window.answer = answer;
 
