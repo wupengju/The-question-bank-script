@@ -4,7 +4,6 @@
  * @time 2017.5.10
  * @description 给本学院题库所写的自动刷题的脚本
  */
-
 ;(function (window) {
 	'use strict';
 
@@ -410,7 +409,6 @@
 		// this.startChapter = 0; // 自定义刷题开始章数
 		// this.endChapter = 0; // 自定义刷题结束章数
 		// this.correctRate = 0; // 自定义刷题正确率
-		
 	};
 
 	// 重新开启自动刷题
@@ -424,7 +422,18 @@
 		clearInterval(this.timer);
 	};
 
-	// code
+	window.Answer = Answer;
+
+}(window));
+
+
+/**
+ * 执行代码
+ */
+;(function () {
+	'use strict';
+
+	// 完整传参示例
 	var options = {
 		arrFrames: ['topmain', 'main'], 
 		validateStr: '此章节下的程序已读取结束',
@@ -432,21 +441,17 @@
 		promptInfoSelector: 'divInfo',
 		arrErrorChapters: [3]
 	};
-  
-  // 自主传参
-	// var answer = Answer(options);
 
-	// 自主传参
-	var answer = Answer({
+	// 调用传参：参数都是可选参数
+	var answer = null;
+	// answer = Answer(options); // 设置全部参数
+	// answer = Answer(); // 全部采用默认参数
+	answer = Answer({ // 设置部分参数
 		arrErrorChapters: [3]
 	});
-
-	// 不传参。采用默认参数
-	// var answer = Answer(); 
+	 
 
 	// answer.start(); // 默认自动开启脚本执行
 	answer.printScriptUsage(); // 打印自动刷题脚本的使用说明
 
-	window.answer = answer;
-
-}(window));
+}());
