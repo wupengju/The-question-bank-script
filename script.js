@@ -9,7 +9,7 @@
 
 
 	/**
-	 * 过滤输入的参数并进行验证
+	 * 过滤输入的参数并进行检测
 	 * @param {[Object]} options 构造Answer实例对象的相关配置参数
 	 */
 	var Answer = function (options) {
@@ -28,7 +28,7 @@
 			this.timer = null; // 定时器
 			this.$mainFrame = this.setMainFrame(options.arrFrames);
 			this.mainFrameWindow = this.$mainFrame.window;
-			this.validateStr = options.validateStr; // 验证章节结束的字符串
+			this.validateStr = options.validateStr; // 检测章节结束的字符串
 			this.$chapter = this.mainFrameWindow.document.getElementById(options.chapterSelector); // 章的DOM对象
 			this.$promptInfo = this.mainFrameWindow.document.getElementById(options.promptInfoSelector); // 显示提示信息的DOM对象
 			this.$chapterOptions = this.$chapter.getElementsByTagName('option');
@@ -38,7 +38,7 @@
 
 			this.startChapter = 0; // 自定义刷题开始章数
 			this.endChapter = null; // 自定义刷题结束章数
-			this.correctRate = 9.5; // 自定义刷题正确率
+			this.correctRate = 9.5; // 自定义刷题符合率
 
 			return this;
 		}
@@ -197,6 +197,41 @@
 		this.curChapterIndex = this.setCurChapterIndex();
 	};
 
+	// 检测一章的自动刷题是否结束
+	Answer.fn.validateEnd = function () {
+
+		return this.$promptInfo.innerText.indexOf(this.validateStr) > -1 ? true : false;
+	};
+
+	// 跳转到下一个章节
+	Answer.fn.toNextChapter = function () {
+		this.arrChapters[ this.curChapterIndex ].finishSign = true; // 将本章的刷题完成标志设置为true
+		this.curChapterIndex++;
+		this.$chapter.value = this.arrChapters[ this.curChapterIndex ].chapterValue;
+		this.$chapterOptions[ this.curChapterIndex ].selected = true;
+
+		Answer.triggerChange(this.$chapter);
+
+		this.dealErrorChapter(); // 处理有错误的章节
+
+		if (this.isEnd() === true) { // 检测题目是否已经刷到最后一张的最后一节
+			clearInterval(this.timer);
+		} else {
+			this.autoGetAnswer(3000);
+		} 
+	};
+
+	// 触发章的onchange事件后自动更新了小节，所以不再需要自定义更新小节
+	Answer.fn.changeSection = function () {};
+
+	// 处理有错误的章节，不能进入正常自动刷题流程
+	Answer.fn.dealErrorChapter = function () {
+		var curChapterIndex = this.curChapterIndex;
+		if (this.arrErrorChapters.indexOf(++curChapterIndex) > -1) {
+			this.toNextChapter();
+		}
+	};
+
 	// 获取当前章节【this.curChapterIndex】的题目总数
 	Answer.fn.getChapterProNum = function (curChapterValue, index) {
 		var chapterProNum = 0,
@@ -272,7 +307,7 @@
 			});
 	}; 
 
-	// 遍历查询，得出正确的答案再进行处理
+	// 遍历查询，得出符合的答案再进行处理
 	Answer.fn.getAnswer = function () {
 		var arrRets = ['A', 'B', 'C', 'D'],
 				_self = this;
@@ -289,7 +324,7 @@
 	    		ret = null;
 
 	    		if(resObj.value) {
-	    		  if (!_self.validateEnd()) { // 验证该章的题目是否已经刷完
+	    		  if (!_self.validateEnd()) { // 检测该章的题目是否已经刷完
 	    		    ret = arrRets[ i ];
 	    		  } else {
 	    		    ret = false;
@@ -304,7 +339,7 @@
     });
     
     p.then(function (ret) {
-    		if (ret) { // 正确的答案才进行答案的最终确认——录入数据库
+    		if (ret) { // 符合的答案才进行答案的最终确认——录入数据库
     		  _self.$mainFrame.makeChoice(ret);
     		  ret = false;
     		} else {
@@ -317,47 +352,13 @@
     	});
 	};
 
-	// 开启自动查询定时器
+	// 创建自动查询定时器
 	Answer.fn.autoGetAnswer = function (duringTime) {
 		var _self = this;
 
 		this.timer = setInterval(function () {
 			_self.getAnswer();
 		}, duringTime);
-	};
-
-	// 验证一章的自动刷题是否结束
-	Answer.fn.validateEnd = function () {
-
-		return this.$promptInfo.innerText.indexOf(this.validateStr) > -1 ? true : false;
-	};
-
-	// 跳转到下一个章节
-	Answer.fn.toNextChapter = function () {
-		this.curChapterIndex++;
-		this.$chapter.value = this.arrChapters[ this.curChapterIndex ].chapterValue;
-		this.$chapterOptions[ this.curChapterIndex ].selected = true;
-
-		Answer.triggerChange(this.$chapter);
-
-		this.dealErrorChapter(); // 处理有错误的章节
-
-		if (this.isEnd() === true) { // 验证题目是否已经刷到最后一张的最后一节
-			clearInterval(this.timer);
-		} else {
-			this.autoGetAnswer(3000);
-		} 
-	};
-
-	// 触发章的onchange事件后自动更新了小节，所以不再需要自定义更新小节
-	Answer.fn.changeSection = function () {};
-
-	// 处理有错误的章节，不能进入正常自动刷题流程
-	Answer.fn.dealErrorChapter = function () {
-		var curChapterIndex = this.curChapterIndex;
-		if (this.arrErrorChapters.indexOf(++curChapterIndex) > -1) {
-			this.toNextChapter();
-		}
 	};
 
 	// 打印自动刷题脚本的使用说明
@@ -369,17 +370,19 @@
 	// 开启自动刷题
 	Answer.fn.start = function () {
 
+		var trueEndChapter = this.$chapterOptions.length - 1;
+
+
 		/**
-		 * 验证参数是否符合要求
+		 * 检测参数是否符合要求
 		 * @param  {[Array]} 		arg 	参数类数组对象
-		 * @param  {[Number]} 	len 	参数类数组对象应有的长度
 		 * @return {[Boolean]}  true  参数满足条件
 		 * @return {[Boolean]}  false 参数不满足条件
 		 */
-		function detectArguments(arg, len) {
+		function detectArguments(arg) {
 
-			for (var i = 0; i < len; i++) {
-				if (!Answer.detectDataTypes(arg[ i ], 'Number') && (arg[ len ] ? Answer.detectDataTypes(arg[ len ], 'Number') : false)) {
+			for (var i = 0, len = arg.length; i < len; i++) {
+				if (!Answer.detectDataTypes(arg[ i ], 'Number')) {
 					return false;
 				}
 			}
@@ -387,29 +390,73 @@
 			return true;
 		}
 
-		// answer.start()
-		if (arguments.length === 0) {
-			// this.autoGetAnswer(3000);
-			
-			return;
-		} else if (detectArguments(arguments, 1)) { // answer.start(90)
-			if (arguments[ 0 ] >= 90 && arguments[ 0 ] <= 99) {
-				console.log('answer.start(90)');
-				return;
-			}
-		} else if (detectArguments(arguments, 2)) { // answer.start(1, 2)
-			console.log('answer.start(1, 2)');
-		} else if (detectArguments(arguments, 3)) { // answer.start(1, 2, 90)
-			console.log('answer.start(1, 2, 90)');
-		} else {
-			console.log('请输入符合规范的开始调用参数.');
-			return false;
+
+		/**
+		 * 检测章数目的start和end是否符合
+		 * @param  {[Number]}  startChapter 开始章数的index
+		 * @param  {[Number]}  endChapter   结束章数的index
+		 * @return {[Boolean]} true         开始和结束章数的index都符合
+		 * @return {[Boolean]} false        开始或结束章数的index都不符合
+		 */
+		function detectChapterIndex(startChapter, endChapter) {
+			return (startChapter >= 0 && startChapter <= trueEndChapter) && (endChapter >= 0 && endChapter <= trueEndChapter) && startChapter <= endChapter? true : false;
 		}
 
-		
-		// this.startChapter = 0; // 自定义刷题开始章数
-		// this.endChapter = 0; // 自定义刷题结束章数
-		// this.correctRate = 0; // 自定义刷题正确率
+
+		/**
+		 * 检测自定义正确率是否符合
+		 * @param  {[Number]}  rate  自定义正确率
+		 * @return {[Boolean]} true  自定义正确率符合
+		 * @return {[Boolean]} false 自定义正确率不符合
+		 */
+		function detectCorrectRate(rate) {
+			return rate >= 90 && rate <= 99 ? true : false;
+		}
+
+
+		/**
+		 * 检测三个参数都同时传入时是否符合
+		 * @param  {[Number]} rate         自定义正确率
+		 * @param  {[Number]} startChapter 开始章数的index
+		 * @param  {[Number]} endChapter   结束章数的index
+		 * @return {[Boolean]} true  			 三个参数都符合
+		 * @return {[Boolean]} false 			 三个参数其中或全部不符合
+		 */
+		function detectThreeArgs(rate, startChapter, endChapter) {
+			return arguments.length === 3 && detectArguments(arguments) && detectCorrectRate(rate) && detectChapterIndex(startChapter, endChapter) ? true : false;
+		}
+
+		if (arguments.length === 0) { // 均采用默认参数
+			this.startChapter = 0; // 自定义刷题开始章数
+			this.endChapter = trueEndChapter; // 自定义刷题结束章数
+			this.correctRate = 0.95; // 自定义刷题符合率
+			this.autoGetAnswer(3000);
+			return;
+		}
+		if (arguments.length === 1 && detectArguments(arguments) && detectCorrectRate(arguments[ 0 ])) { // answer.start(90)
+			this.correctRate = (arguments[ 0 ] * 0.01).toFixed(2);
+			return;
+		}
+		if (arguments.length === 2 && detectArguments(arguments) && detectChapterIndex(arguments[ 0 ], arguments[ 1 ])) { // answer.start(1, 2)
+			this.startChapter = Math.ceil(arguments[ 0 ]);
+			this.endChapter = Math.floor(arguments[ 1 ]);
+			return;
+		}
+		if (detectThreeArgs(arguments[ 0 ], arguments[ 1 ], arguments[ 2 ])) { // answer.start(1, 2, 90)
+			this.correctRate = (arguments[ 0 ] * 0.01).toFixed(2);
+			this.startChapter = Math.ceil(arguments[ 1 ]);
+			this.endChapter = Math.floor(arguments[ 2 ]);
+			return;
+		}
+		if (detectThreeArgs(arguments[ 2 ], arguments[ 0 ], arguments[ 1 ])) { // answer.start(1, 2, 90)
+			this.startChapter = Math.ceil(arguments[ 0 ]);
+			this.endChapter = Math.floor(arguments[ 1 ]);
+			this.correctRate = (arguments[ 2 ] * 0.01).toFixed(2);
+			return;
+		}
+
+		console.log('请输入符合规范的开始调用参数.');
+		return false;
 	};
 
 	// 重新开启自动刷题
