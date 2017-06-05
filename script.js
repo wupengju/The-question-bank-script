@@ -36,9 +36,9 @@
 			this.curChapterIndex = this.setCurChapterIndex(); // 正在刷的题目的章节数
 			this.arrErrorChapters = options.arrErrorChapters || []; // 有错误章节项目的序列数组
 
-			this.startChapter = 0; // 自定义刷题开始章数
-			this.endChapter = null; // 自定义刷题结束章数
-			this.correctRate = 9.5; // 自定义刷题符合率
+			this.startChapterIndex = 0; // 自定义刷题开始章数
+			this.endChapterIndex = null; // 自定义刷题结束章数
+			this.correctRate = 0.95; // 自定义刷题符合率
 
 			return this;
 		}
@@ -181,60 +181,14 @@
 		this.arrChapters.forEach(function (item, index) {
 			retNum = item.chapterValue === curChapterValue ? index : retNum;
 		});
-
-		var _self = this;
-		this.$chapter.addEventListener('change', function () {
-			_self.rewriteCurChapterIndex();
-			_self.dealErrorChapter();
-		});
-
+		
 		return retNum;
 	};
 
 	// 更新curChapterIndex属性
-	Answer.fn.rewriteCurChapterIndex = function () {
+	Answer.fn.rewriteCurChapterIndex = function (curChapterIndex) {
 
-		this.curChapterIndex = this.setCurChapterIndex();
-	};
-
-	// 检测一章的自动刷题是否结束
-	Answer.fn.validateEnd = function () {
-
-		return this.$promptInfo.innerText.indexOf(this.validateStr) > -1 ? true : false;
-	};
-
-	// 跳转到指定章节
-	Answer.fn.toSetChapter = function (curChapter) {
-		this.$chapter.value = this.arrChapters[ curChapter ].chapterValue;
-		this.$chapterOptions[ curChapter ].selected = true;
-
-		Answer.triggerChange(this.$chapter);
-
-		this.dealErrorChapter(); // 处理有错误的章节
-
-		if (this.isEnd() === true) { // 检测题目是否已经刷到最后一张的最后一节
-			clearInterval(this.timer);
-		} else {
-			this.autoGetAnswer(3000);
-		} 
-	};
-
-	// 跳转到下一个章节
-	Answer.fn.toNextChapter = function () {
-		this.arrChapters[ this.curChapterIndex ].finishSign = true; // 将本章的刷题完成标志设置为true
-		this.curChapterIndex++;
-		this.toSetChapter(this.curChapterIndex);
-	};
-
-	// 触发章的onchange事件后自动更新了小节，所以不再需要自定义更新小节
-	Answer.fn.changeSection = function () {};
-
-	// 处理有错误的章节，不能进入正常自动刷题流程
-	Answer.fn.dealErrorChapter = function () {
-		var curChapterIndex = this.curChapterIndex;
-		if (this.arrErrorChapters.indexOf(++curChapterIndex) > -1) {
-			this.toNextChapter();
-		}
+		this.curChapterIndex = curChapterIndex ? curChapterIndex : this.setCurChapterIndex();
 	};
 
 	// 获取当前章节【this.curChapterIndex】的题目总数
@@ -310,7 +264,48 @@
 			.catch(function (e) {
 				console.log(e);
 			});
-	}; 
+	};
+
+	// 检测一章的自动刷题是否结束
+	Answer.fn.validateEnd = function () {
+
+		return this.$promptInfo.innerText.indexOf(this.validateStr) > -1 ? true : false;
+	};
+
+	// 跳转到指定章节
+	Answer.fn.toSetChapter = function (curChapterIndex) {
+		console.log(this.arrChapters[ curChapterIndex ]);
+		this.$chapter.value = this.arrChapters[ curChapterIndex ].chapterValue;
+		this.arrChapters[ curChapterIndex ].chapterProNum = this.getChapterProNum(this.$chapter.value, curChapterIndex);
+
+		Answer.triggerChange(this.$chapter);
+
+		this.dealErrorChapter(); // 处理有错误的章节
+
+		if (this.isEnd() === true) { // 检测题目是否已经刷到最后一张的最后一节
+			clearInterval(this.timer);
+		} else {
+			this.autoGetAnswer(3000);
+		} 
+	};
+
+	// 跳转到下一个章节
+	Answer.fn.toNextChapter = function () {
+		this.arrChapters[ this.curChapterIndex ].finishSign = true; // 将本章的刷题完成标志设置为true
+		this.curChapterIndex++;
+		this.toSetChapter(this.curChapterIndex);
+	};
+
+	// 触发章的onchange事件后自动更新了小节，所以不再需要自定义更新小节
+	Answer.fn.changeSection = function () {};
+
+	// 处理有错误的章节，不能进入正常自动刷题流程
+	Answer.fn.dealErrorChapter = function () {
+		var curChapterIndex = this.curChapterIndex;
+		if (this.arrErrorChapters.indexOf(++curChapterIndex) > -1) {
+			this.toNextChapter();
+		}
+	};
 
 	// 遍历查询，得出符合的答案再进行处理
 	Answer.fn.getAnswer = function () {
@@ -329,10 +324,10 @@
 	    		ret = null;
 
 	    		if(resObj.value) {
-	    		  if (!_self.validateEnd()) { // 检测该章的题目是否已经刷完
-	    		    ret = arrRets[ i ];
-	    		  } else {
+	    		  if (_self.validateEnd()) { // 检测该章的题目是否已经刷完
 	    		    ret = false;
+	    		  } else {
+	    		    ret = arrRets[ i ];
 	    		  }
 	    		  resolve(ret);
 	    		  break;
@@ -361,6 +356,7 @@
 	Answer.fn.autoGetAnswer = function (duringTime) {
 		var _self = this;
 
+		clearInterval(this.timer);
 		this.timer = setInterval(function () {
 			_self.getAnswer();
 		}, duringTime);
@@ -375,7 +371,8 @@
 	// 开启自动刷题
 	Answer.fn.start = function () {
 
-		var trueEndChapter = this.$chapterOptions.length - 1;
+		var defaultEndChapter = this.$chapterOptions.length - 1,
+			  _self = this;
 
 
 		/**
@@ -398,13 +395,13 @@
 
 		/**
 		 * 检测章数目的start和end是否符合
-		 * @param  {[Number]}  startChapter 开始章数的index
-		 * @param  {[Number]}  endChapter   结束章数的index
+		 * @param  {[Number]}  startChapterIndex 开始章数的index
+		 * @param  {[Number]}  endChapterIndex   结束章数的index
 		 * @return {[Boolean]} true         开始和结束章数的index都符合
 		 * @return {[Boolean]} false        开始或结束章数的index都不符合
 		 */
-		function detectChapterIndex(startChapter, endChapter) {
-			return (startChapter >= 0 && startChapter <= trueEndChapter) && (endChapter >= 0 && endChapter <= trueEndChapter) && startChapter <= endChapter? true : false;
+		function detectChapterIndex(startChapterIndex, endChapterIndex) {
+			return (startChapterIndex >= 0 && startChapterIndex <= defaultEndChapter) && (endChapterIndex >= 0 && endChapterIndex <= defaultEndChapter) && startChapterIndex <= endChapterIndex? true : false;
 		}
 
 
@@ -422,46 +419,66 @@
 		/**
 		 * 检测三个参数都同时传入时是否符合
 		 * @param  {[Number]} rate         自定义正确率
-		 * @param  {[Number]} startChapter 开始章数的index
-		 * @param  {[Number]} endChapter   结束章数的index
+		 * @param  {[Number]} startChapterIndex 开始章数的index
+		 * @param  {[Number]} endChapterIndex   结束章数的index
 		 * @return {[Boolean]} true  			 三个参数都符合
 		 * @return {[Boolean]} false 			 三个参数其中或全部不符合
 		 */
-		function detectThreeArgs(rate, startChapter, endChapter) {
-			return arguments.length === 3 && detectArguments(arguments) && detectCorrectRate(rate) && detectChapterIndex(startChapter, endChapter) ? true : false;
+		function detectThreeArgs(rate, startChapterIndex, endChapterIndex) {
+			return arguments.length === 3 && detectArguments(arguments) && detectCorrectRate(rate) && detectChapterIndex(startChapterIndex, endChapterIndex) ? true : false;
 		}
 
+
+		/**
+		 * 抽离三个参数的赋值语句
+		 * @param {[Number]} startChapterIndex 开始章数的index
+		 * @param {[Number]} endChapterIndex   结束章数的index
+		 * @param {[Number]} correctRate  自定义正确率
+		 */
+		function setValues(startChapterIndex, endChapterIndex, correctRate) {
+			_self.startChapterIndex = startChapterIndex - 1; // 自定义刷题开始章数
+			_self.endChapterIndex = endChapterIndex - 1; // 自定义刷题结束章数
+			_self.correctRate = correctRate; // 自定义刷题符合率
+		}
+
+		// 给$chapter绑定change的自定义事件处理程序
+		this.$chapter.addEventListener('change', function () {
+			_self.rewriteCurChapterIndex();
+			_self.dealErrorChapter();
+			_self.isEnd()
+		});
+
 		if (arguments.length === 0) { // 均采用默认参数
-			this.startChapter = 0; // 自定义刷题开始章数
-			this.endChapter = trueEndChapter; // 自定义刷题结束章数
-			this.correctRate = 0.95; // 自定义刷题符合率
+			setValues(0, defaultEndChapter, 0.95);
 			this.autoGetAnswer(3000);
 			return;
 		}
 		if (arguments.length === 1 && detectArguments(arguments) && detectCorrectRate(arguments[ 0 ])) { // answer.start(90)
-			this.correctRate = (arguments[ 0 ] * 0.01).toFixed(2);
+			setValues(0, defaultEndChapter, (arguments[ 0 ] * 0.01).toFixed(2));
+			this.autoGetAnswer(3000);
 			return;
 		}
 		if (arguments.length === 2 && detectArguments(arguments) && detectChapterIndex(arguments[ 0 ], arguments[ 1 ])) { // answer.start(1, 2)
-			this.startChapter = Math.ceil(arguments[ 0 ]);
-			this.endChapter = Math.floor(arguments[ 1 ]);
+			setValues(Math.ceil(arguments[ 0 ]), Math.floor(arguments[ 1 ]), 0.95);
+			this.rewriteCurChapterIndex(this.startChapterIndex);
+			this.toSetChapter(this.startChapterIndex);
 			return;
 		}
-		if (detectThreeArgs(arguments[ 0 ], arguments[ 1 ], arguments[ 2 ])) { // answer.start(1, 2, 90)
-			this.correctRate = (arguments[ 0 ] * 0.01).toFixed(2);
-			this.startChapter = Math.ceil(arguments[ 1 ]);
-			this.endChapter = Math.floor(arguments[ 2 ]);
+		if (detectThreeArgs(arguments[ 0 ], arguments[ 1 ], arguments[ 2 ])) { // answer.start(90, 1 ,2)
+			setValues(Math.ceil(arguments[ 1 ]), Math.floor(arguments[ 2 ]), (arguments[ 0 ] * 0.01).toFixed(2));
+			this.rewriteCurChapterIndex(this.startChapterIndex);
+			this.toSetChapter(this.startChapterIndex);
 			return;
 		}
 		if (detectThreeArgs(arguments[ 2 ], arguments[ 0 ], arguments[ 1 ])) { // answer.start(1, 2, 90)
-			this.startChapter = Math.ceil(arguments[ 0 ]);
-			this.endChapter = Math.floor(arguments[ 1 ]);
-			this.correctRate = (arguments[ 2 ] * 0.01).toFixed(2);
+			setValues(Math.ceil(arguments[ 0 ]), Math.floor(arguments[ 1 ]), (arguments[ 2 ] * 0.01).toFixed(2));
+			this.rewriteCurChapterIndex(this.startChapterIndex);
+			this.toSetChapter(this.startChapterIndex);
 			return;
+		} else {
+			console.log('请输入符合规范的开始调用参数.');
+			return false;
 		}
-
-		console.log('请输入符合规范的开始调用参数.');
-		return false;
 	};
 
 	// 重新开启自动刷题
@@ -473,9 +490,9 @@
 	// 结束自动刷题
 	Answer.fn.isEnd = function () {
 
-	  if (++this.curChapterIndex === this.$chapterOptions.length && _self.validateEnd()) {
+	  if (this.curChapterIndex > this.endChapterIndex || (this.curChapterIndex === this.endChapterIndex && this.validateEnd())) {
 			clearInterval(this.timer);
-			console.log('自动刷题已经全部完成!');
+			console.log('本次自动刷题完成!');
 			return true;
 	  }
 	};
