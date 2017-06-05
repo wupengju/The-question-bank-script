@@ -203,12 +203,10 @@
 		return this.$promptInfo.innerText.indexOf(this.validateStr) > -1 ? true : false;
 	};
 
-	// 跳转到下一个章节
-	Answer.fn.toNextChapter = function () {
-		this.arrChapters[ this.curChapterIndex ].finishSign = true; // 将本章的刷题完成标志设置为true
-		this.curChapterIndex++;
-		this.$chapter.value = this.arrChapters[ this.curChapterIndex ].chapterValue;
-		this.$chapterOptions[ this.curChapterIndex ].selected = true;
+	// 跳转到指定章节
+	Answer.fn.toSetChapter = function (curChapter) {
+		this.$chapter.value = this.arrChapters[ curChapter ].chapterValue;
+		this.$chapterOptions[ curChapter ].selected = true;
 
 		Answer.triggerChange(this.$chapter);
 
@@ -219,6 +217,13 @@
 		} else {
 			this.autoGetAnswer(3000);
 		} 
+	};
+
+	// 跳转到下一个章节
+	Answer.fn.toNextChapter = function () {
+		this.arrChapters[ this.curChapterIndex ].finishSign = true; // 将本章的刷题完成标志设置为true
+		this.curChapterIndex++;
+		this.toSetChapter(this.curChapterIndex);
 	};
 
 	// 触发章的onchange事件后自动更新了小节，所以不再需要自定义更新小节
@@ -364,7 +369,7 @@
 	// 打印自动刷题脚本的使用说明
 	Answer.fn.printScriptUsage = function () {
 
-		console.log('/*\n* \u81EA\u52A8\u5237\u9898\u811A\u672C\u7684\u4F7F\u7528\u8BF4\u660E\n* \u542F\u52A8\u6267\u884C\u811A\u672C\uFF1A\n* \t1. answer.start() \uFF1A\u5747\u4F7F\u7528\u9ED8\u8BA4\u53C2\u6570\u5237\u9898\u7AE0\u8282\u6570\u4ECE\u5F53\u524D\u7AE0\u8282\u76F4\u5230\u5237\u5B8C\u4E3A\u6B62 \u548C \u6B63\u786E\u7387\u4E3A 95%\n* \t2. answer.start(\'1\', \'2\') \uFF1A\u81EA\u5B9A\u4E49\u5237\u9898\u7AE0\u8282\u6570 1-2\n* \t3. answer.start(90) \uFF1A\u81EA\u5B9A\u4E49\u6B63\u786E\u7387\u4F4D 90%\n* \t4. answer.start([\'1\', \'2\'], 90) \uFF1A\u81EA\u5B9A\u4E49\u5237\u9898\u7AE0\u8282\u6570 1-2 \u548C \u81EA\u5B9A\u4E49\u6B63\u786E\u7387\u4F4D 90%\n* \u91CD\u65B0\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.restart();\n* \u6682\u505C\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.pause();\n* \u505C\u6B62\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.stop();\n*/');
+		console.log('自动刷题脚本的使用说明');
 	};
 
 	// 开启自动刷题
@@ -489,7 +494,7 @@
 /**
  * 执行代码
  */
-;(function () {
+;(function (window) {
 	'use strict';
 
 	// 完整传参示例
@@ -513,4 +518,7 @@
 	// answer.start(); // 默认自动开启脚本执行
 	answer.printScriptUsage(); // 打印自动刷题脚本的使用说明
 
-}());
+	// 将answer实例对象也添加到全局对象window，方便用户调用
+	window.answer = answer;
+
+}(window));
