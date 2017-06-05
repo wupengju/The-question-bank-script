@@ -44,6 +44,8 @@
 			this.curErrorTotalQuestions = 0; // 本章已经错误的总数
 			this.chapterCount = 0; // 章刷题计数器
 
+			this.endSign = false; // 结束标志
+
 			return this;
 		}
 	};
@@ -471,7 +473,6 @@
 		this.$chapter.addEventListener('change', function () {
 			_self.rewriteCurChapterIndex();
 			_self.dealErrorChapter();
-			_self.isEnd();
 		});
 
 		if (arguments.length === 0) { // 均采用默认参数
@@ -510,12 +511,38 @@
 		this.autoGetAnswer(3000);
 	};
 
+	// 打印最后的刷题情况
+	Answer.fn.lastResult = function () {
+
+	  var finishChapter = '已完成：',
+	  		noFinishChapter = '未完成：',
+	  		curChapter = null;
+
+	  for (var i = 0, len = this.arrChapters.length; i < len; i++) {
+	  	curChapter = this.arrChapters[ i ];
+	  	if (curChapter.finishSign) {
+	  		finishChapter += curChapter.chapterName + '、';
+	  	} else {
+	  		noFinishChapter += curChapter.chapterName + '、';
+	  	}
+	  }
+
+	  console.log('刷题情况统计：');
+	  console.log(finishChapter);
+	  console.log(noFinishChapter);
+	};
+
 	// 结束自动刷题
 	Answer.fn.isEnd = function () {
 
 	  if (this.curChapterIndex > this.endChapterIndex || (this.curChapterIndex === this.endChapterIndex && this.validateEnd())) {
 			clearInterval(this.timer);
-			console.log('本次自动刷题完成!');
+
+			if (!this.endSign) {
+				this.lastResult();
+				console.log('本次自动刷题完成!');
+				this.endSign = true;
+			}
 			return true;
 	  }
 	};
