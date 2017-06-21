@@ -476,12 +476,12 @@
 		});
 
 		if (arguments.length === 0) { // 均采用默认参数
-			setValues(0, defaultEndChapter - 1, 0.95);
+			setValues(1, defaultEndChapter - 1, 0.95);
 			excuteMoreArgs(this.startChapterIndex);
 			return;
 		}
 		if (arguments.length === 1 && detectArguments(arguments) && detectCorrectRate(arguments[ 0 ])) { // answer.start(90)
-			setValues(0, defaultEndChapter - 1, (arguments[ 0 ] * 0.01).toFixed(2));
+			setValues(1, defaultEndChapter - 1, (arguments[ 0 ] * 0.01).toFixed(2));
 			excuteMoreArgs(this.startChapterIndex);
 			return;
 		}
