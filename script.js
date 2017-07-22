@@ -5,555 +5,555 @@
  * @description 给本学院题库所写的自动刷题的脚本
  */
 ;(function (window) {
-	'use strict';
+    'use strict';
 
 
-	/**
-	 * 过滤输入的参数并进行检测
-	 * @param {[Object]} options 构造Answer实例对象的相关配置参数
-	 */
-	var Answer = function (options) {
+    /**
+     * 过滤输入的参数并进行检测
+     * @param {[Object]} options 构造Answer实例对象的相关配置参数
+     */
+    var Answer = function (options) {
 
-		options = Answer.detectOptions(options);
+        options = Answer.detectOptions(options);
 
-		if (options !== false) {
-			return new Answer.fn.init(options);
-		}
-	};
+        if (options !== false) {
+            return new Answer.fn.init(options);
+        }
+    };
 
-	Answer.fn = Answer.prototype = {
-		constructor: Answer,
-		version: '0.1.1',
-		init: function (options) {
-			this.timer = null; // 定时器
-			this.$mainFrame = this.setMainFrame(options.arrFrames);
-			this.mainFrameWindow = this.$mainFrame.window;
-			this.validateStr = options.validateStr; // 检测章节结束的字符串
-			this.$chapter = this.mainFrameWindow.document.getElementById(options.chapterSelector); // 章的DOM对象
-			this.$promptInfo = this.mainFrameWindow.document.getElementById(options.promptInfoSelector); // 显示提示信息的DOM对象
-			this.$chapterOptions = this.$chapter.getElementsByTagName('option');
-			this.arrChapters = this.setArrChapters(); // 章节项目的信息组成的对象数组
-			this.curChapterIndex = this.setCurChapterIndex(); // 正在刷的题目的章节数
-			this.arrErrorChapters = options.arrErrorChapters || []; // 有错误章节项目的序列数组
+    Answer.fn = Answer.prototype = {
+        constructor: Answer,
+        version: '0.1.1',
+        init: function (options) {
+            this.timer = null; // 定时器
+            this.$mainFrame = this.setMainFrame(options.arrFrames);
+            this.mainFrameWindow = this.$mainFrame.window;
+            this.validateStr = options.validateStr; // 检测章节结束的字符串
+            this.$chapter = this.mainFrameWindow.document.getElementById(options.chapterSelector); // 章的DOM对象
+            this.$promptInfo = this.mainFrameWindow.document.getElementById(options.promptInfoSelector); // 显示提示信息的DOM对象
+            this.$chapterOptions = this.$chapter.getElementsByTagName('option');
+            this.arrChapters = this.setArrChapters(); // 章节项目的信息组成的对象数组
+            this.curChapterIndex = this.setCurChapterIndex(); // 正在刷的题目的章节数
+            this.arrErrorChapters = options.arrErrorChapters || []; // 有错误章节项目的序列数组
 
-			this.startChapterIndex = 0; // 自定义刷题开始章数
-			this.endChapterIndex = null; // 自定义刷题结束章数
-			this.correctRate = 0.95; // 自定义刷题符合率
+            this.startChapterIndex = 0; // 自定义刷题开始章数
+            this.endChapterIndex = null; // 自定义刷题结束章数
+            this.correctRate = 0.95; // 自定义刷题符合率
 
-			this.curChapterAllErrors = 0; // 本章满足正确率错误的题目总数
-			this.curErrorTotalQuestions = 0; // 本章已经错误的总数
-			this.chapterCount = 0; // 章刷题计数器
+            this.curChapterAllErrors = 0; // 本章满足正确率错误的题目总数
+            this.curErrorTotalQuestions = 0; // 本章已经错误的总数
+            this.chapterCount = 0; // 章刷题计数器
 
-			this.endSign = false; // 结束标志
+            this.endSign = false; // 结束标志
 
-			return this;
-		}
-	};
+            return this;
+        }
+    };
 
-	Answer.fn.init.prototype = Answer.fn;
+    Answer.fn.init.prototype = Answer.fn;
 
-	/**
-	 * 添加工具方法
-	 */
+    /**
+     * 添加工具方法
+     */
 
-	// 添加默认参数
-	Answer.addDefaultOptions = function (options, arrOptionsKeys) {
+    // 添加默认参数
+    Answer.addDefaultOptions = function (options, arrOptionsKeys) {
 
-		var defaultOptions = {
-			arrFrames: ['topmain', 'main'], 
-			validateStr: '此章节下的程序已读取结束',
-			chapterSelector: 'cChapter',
-			promptInfoSelector: 'divInfo',
-			arrErrorChapters: [3]
-		};
+        var defaultOptions = {
+            arrFrames: ['topmain', 'main'], 
+            validateStr: '此章节下的程序已读取结束',
+            chapterSelector: 'cChapter',
+            promptInfoSelector: 'divInfo',
+            arrErrorChapters: [3]
+        };
 
-		if (arguments.length === 1) {
-			return defaultOptions;
-		} else {
-			for (var i = 0, len = arrOptionsKeys.length; i < len; i++) {
-				defaultOptions[ arrOptionsKeys[ i ] ] = options[ arrOptionsKeys[ i ] ]; // 直接覆盖
-			}
-			return defaultOptions;
-		}
-	};
+        if (arguments.length === 1) {
+            return defaultOptions;
+        } else {
+            for (var i = 0, len = arrOptionsKeys.length; i < len; i++) {
+                defaultOptions[ arrOptionsKeys[ i ] ] = options[ arrOptionsKeys[ i ] ]; // 直接覆盖
+            }
+            return defaultOptions;
+        }
+    };
 
-	// 检测构造函数的配置参数
-	Answer.detectOptions = function (options) {
-		var ret = [],
-				checkSign = false,
-				arrOptionsKeys = [];
+    // 检测构造函数的配置参数
+    Answer.detectOptions = function (options) {
+        var ret = [],
+                checkSign = false,
+                arrOptionsKeys = [];
 
-		if (options === undefined) { // 添加默认参数
-			return Answer.addDefaultOptions(options);
-		} else { // 检测配置参数
-			if (!Answer.detectDataTypes(options, 'Object')) {
-				console.log('请传入对象参数.');
-				return false;
-			}
+        if (options === undefined) { // 添加默认参数
+            return Answer.addDefaultOptions(options);
+        } else { // 检测配置参数
+            if (!Answer.detectDataTypes(options, 'Object')) {
+                console.log('请传入对象参数.');
+                return false;
+            }
 
-			// 按照默认参数的设置顺序检测参数
-			if ('arrFrames' in options) { // 先判断参数的存在性，再判断参数的类型
-				ret.push(Answer.detectDataTypes(options.arrFrames, 'Array'));
-			}
-			
-			if ('validateStr' in options ) { // 先判断参数的存在性，再判断参数的类型
-				ret.push(Answer.detectDataTypes(options.validateStr, 'String'));
-			}
+            // 按照默认参数的设置顺序检测参数
+            if ('arrFrames' in options) { // 先判断参数的存在性，再判断参数的类型
+                ret.push(Answer.detectDataTypes(options.arrFrames, 'Array'));
+            }
+            
+            if ('validateStr' in options ) { // 先判断参数的存在性，再判断参数的类型
+                ret.push(Answer.detectDataTypes(options.validateStr, 'String'));
+            }
 
-			if ('chapterSelector' in options) { // 先判断参数的存在性，再判断参数的类型
-				ret.push(Answer.detectDataTypes(options.chapterSelector, 'String'));
-			}
-			
-			if ('promptInfoSelector' in options ) { // 先判断参数的存在性，再判断参数的类型
-				ret.push(Answer.detectDataTypes(options.promptInfoSelector, 'String'));
-			}
+            if ('chapterSelector' in options) { // 先判断参数的存在性，再判断参数的类型
+                ret.push(Answer.detectDataTypes(options.chapterSelector, 'String'));
+            }
+            
+            if ('promptInfoSelector' in options ) { // 先判断参数的存在性，再判断参数的类型
+                ret.push(Answer.detectDataTypes(options.promptInfoSelector, 'String'));
+            }
 
-			if ('arrErrorChapters' in options) { // 先判断参数的存在性，再判断参数的类型
-				ret.push(Answer.detectDataTypes(options.arrErrorChapters, 'Array'));
-			}
+            if ('arrErrorChapters' in options) { // 先判断参数的存在性，再判断参数的类型
+                ret.push(Answer.detectDataTypes(options.arrErrorChapters, 'Array'));
+            }
 
-			checkSign = ret.every(function (item) {
-				return item === true ? true : false;
-			});
+            checkSign = ret.every(function (item) {
+                return item === true ? true : false;
+            });
 
-			if (checkSign) {
-				arrOptionsKeys =  Object.keys(options); // 可能有兼容性问题
-				if (arrOptionsKeys.length < 5) { // 优化：只有当传入配置参数的属性不够的时候才会添加默认参数
-					options = Answer.addDefaultOptions(options, arrOptionsKeys);
-				}
-				return options;
-			} else {
-				console.log('传入的参数不符合规范.');
-				return false;
-			}
-		}
-	};
+            if (checkSign) {
+                arrOptionsKeys =  Object.keys(options); // 可能有兼容性问题
+                if (arrOptionsKeys.length < 5) { // 优化：只有当传入配置参数的属性不够的时候才会添加默认参数
+                    options = Answer.addDefaultOptions(options, arrOptionsKeys);
+                }
+                return options;
+            } else {
+                console.log('传入的参数不符合规范.');
+                return false;
+            }
+        }
+    };
 
-	// 检测数据类型
-	Answer.detectDataTypes = function (value, type) {
+    // 检测数据类型
+    Answer.detectDataTypes = function (value, type) {
 
-		return Object.prototype.toString.apply(value) === '[object ' + type + ']' ? true : false;
-	};
+        return Object.prototype.toString.apply(value) === '[object ' + type + ']' ? true : false;
+    };
 
-	// 兼容触发selelct元素的change事件——章节选择是select
-	Answer.trigger = function ($element, eventType) {
-		if ($element.fireEvent) {
-		  $element.fireEvent(eventType);
-		} else {
-		  $element[ eventType ]();
-		}
-	};
-
-
-	/**
-	 * 添加实例方法
-	 */
-
-	// 设置$mainFrame属性
-	Answer.fn.setMainFrame = function (arrFrames) {
-		var curFrames = window;
-		for (var i = 0, len = arrFrames.length; i < len; i++) {
-			curFrames = curFrames.frames[ arrFrames[ i ] ];
-		}
-		return curFrames;
-	};
-
-	// 设置arrChapters属性
-	Answer.fn.setArrChapters = function () {
-		var curChapterOption = null,
-				arrRets = [],
-				curChapterValue = 0;
-
-		for (var i = 0, len = this.$chapterOptions.length; i < len; i++) {
-			curChapterOption = this.$chapterOptions[ i ];
-			curChapterValue = parseInt(curChapterOption.value, 10);
-
-			arrRets.push({
-				chapterName: curChapterOption.innerText,
-				chapterValue: curChapterValue,
-				chapterProNum: 0,
-				chapterAllErrors: 0,
-				finishSign: false
-			});
-		}
-
-		return arrRets;
-	};
-
-	// 设置curChapterIndex属性
-	Answer.fn.setCurChapterIndex = function () {
-		var curChapterValue = parseInt(this.$chapter.value, 10),
-				retNum = 0;
-
-		this.arrChapters.forEach(function (item, index) {
-			retNum = item.chapterValue === curChapterValue ? index : retNum;
-		});
-		
-		return retNum;
-	};
-
-	// 更新curChapterIndex属性
-	Answer.fn.rewriteCurChapterIndex = function (curChapterIndex) {
-
-		this.curChapterIndex = curChapterIndex ? curChapterIndex : this.setCurChapterIndex();
-	};
-
-	// 获取当前章节【this.curChapterIndex】的题目总数
-	Answer.fn.getChapterProNum = function (curChapterValue, index) {
-		var chapterProNum = 0,
-				_self = this;
+    // 兼容触发selelct元素的change事件——章节选择是select
+    Answer.trigger = function ($element, eventType) {
+        if ($element.fireEvent) {
+          $element.fireEvent(eventType);
+        } else {
+          $element[ eventType ]();
+        }
+    };
 
 
-		/**
-		 * 获取一章的每个小节的Promise对象
-		 * @param  {[String]} CProgramID 该小节对应的ID
-		 * @return {[Object]} Promise    通过CProgramID发送异步请求构造的Promise对象
-		 */
-		function getCProgramIDPromise(CProgramID) {
+    /**
+     * 添加实例方法
+     */
 
-			return new Promise(function (resolve, reject) {
-				var strTestParam = '',
-						resObj = null;
+    // 设置$mainFrame属性
+    Answer.fn.setMainFrame = function (arrFrames) {
+        var curFrames = window;
+        for (var i = 0, len = arrFrames.length; i < len; i++) {
+            curFrames = curFrames.frames[ arrFrames[ i ] ];
+        }
+        return curFrames;
+    };
 
-				try {
-		  		strTestParam = '<cTest><cProgram>' + CProgramID + '</cProgram><cQuestionIndex>0</cQuestionIndex></cTest>';
-		  		resObj = _self.$mainFrame.CExam.CPractice.GetJSONTest(strTestParam);
-		  		resObj = JSON.parse(resObj.value);
-		  		resolve(parseInt(resObj.CQuestion.CQuestionCount, 10));
-				} catch(e) {
-					reject(e);
-				}
-			});
-		}
+    // 设置arrChapters属性
+    Answer.fn.setArrChapters = function () {
+        var curChapterOption = null,
+                arrRets = [],
+                curChapterValue = 0;
 
-		var p = new Promise(function (resolve, reject) {
-			try {
+        for (var i = 0, len = this.$chapterOptions.length; i < len; i++) {
+            curChapterOption = this.$chapterOptions[ i ];
+            curChapterValue = parseInt(curChapterOption.value, 10);
 
-		  		var cChapterID = curChapterValue + '';
-		  		var resObj = _self.$mainFrame.CExam.CPractice.GetJSONProgramList(cChapterID);
+            arrRets.push({
+                chapterName: curChapterOption.innerText,
+                chapterValue: curChapterValue,
+                chapterProNum: 0,
+                chapterAllErrors: 0,
+                finishSign: false
+            });
+        }
 
-		  		resolve(JSON.parse(resObj.value));
+        return arrRets;
+    };
 
-			} catch(e) {
-				reject(e);
-			}
-		});
+    // 设置curChapterIndex属性
+    Answer.fn.setCurChapterIndex = function () {
+        var curChapterValue = parseInt(this.$chapter.value, 10),
+                retNum = 0;
 
-		p.then(function (cChapterIDObj) {
-				return cChapterIDObj;
-			})
-			.then(function (cChapterIDObj) {
+        this.arrChapters.forEach(function (item, index) {
+            retNum = item.chapterValue === curChapterValue ? index : retNum;
+        });
+        
+        return retNum;
+    };
 
-				var arrCProgramIDPromise = [];
+    // 更新curChapterIndex属性
+    Answer.fn.rewriteCurChapterIndex = function (curChapterIndex) {
 
-				for (var i = 0, len = cChapterIDObj.length; i < len; i++) {
-		  		arrCProgramIDPromise.push(getCProgramIDPromise(cChapterIDObj[ i ].CProgramID));
-	  		}
+        this.curChapterIndex = curChapterIndex ? curChapterIndex : this.setCurChapterIndex();
+    };
 
-				Promise.all(arrCProgramIDPromise)
-							 .then(function () {
-							 		var arrArgs = [].slice.apply(arguments);
-							 		arrArgs = arrArgs.reduce(function (total, curItem) {
-							 			return total + curItem;
-							 		});
-							 		
-							 		chapterProNum = arrArgs.reduce(function (total, curItem) {
-							 			return total + curItem;
-							 		});
+    // 获取当前章节【this.curChapterIndex】的题目总数
+    Answer.fn.getChapterProNum = function (curChapterValue, index) {
+        var chapterProNum = 0,
+                _self = this;
 
-							 		_self.arrChapters[ index ].chapterProNum = chapterProNum;
-							 		_self.curChapterAllErrors = _self.arrChapters[ index ].chapterAllErrors = Math.floor(_self.arrChapters[ index ].chapterProNum * (1 - _self.correctRate));
-							 })
-							 .catch(function (e) {
-							   throw e;
-							 });
-			})
-			.catch(function (e) {
-				console.log(e);
-			});
-	};
 
-	// 检测一章的自动刷题是否结束
-	Answer.fn.validateEnd = function () {
+        /**
+         * 获取一章的每个小节的Promise对象
+         * @param  {[String]} CProgramID 该小节对应的ID
+         * @return {[Object]} Promise    通过CProgramID发送异步请求构造的Promise对象
+         */
+        function getCProgramIDPromise(CProgramID) {
 
-		return this.$promptInfo.innerText.indexOf(this.validateStr) > -1 ? true : false;
-	};
+            return new Promise(function (resolve, reject) {
+                var strTestParam = '',
+                        resObj = null;
 
-	// 跳转到指定章节
-	Answer.fn.toSetChapter = function (curChapterIndex) {
-		this.$chapter.value = this.arrChapters[ curChapterIndex ].chapterValue;
-		this.getChapterProNum(this.$chapter.value, curChapterIndex);
+                try {
+                  strTestParam = '<cTest><cProgram>' + CProgramID + '</cProgram><cQuestionIndex>0</cQuestionIndex></cTest>';
+                  resObj = _self.$mainFrame.CExam.CPractice.GetJSONTest(strTestParam);
+                  resObj = JSON.parse(resObj.value);
+                  resolve(parseInt(resObj.CQuestion.CQuestionCount, 10));
+                } catch(e) {
+                    reject(e);
+                }
+            });
+        }
 
-		Answer.trigger(this.$chapter, 'onchange');
+        var p = new Promise(function (resolve, reject) {
+            try {
 
-		this.dealErrorChapter(); // 处理有错误的章节
+                  var cChapterID = curChapterValue + '';
+                  var resObj = _self.$mainFrame.CExam.CPractice.GetJSONProgramList(cChapterID);
 
-		if (this.isEnd() === true) { // 检测题目是否已经刷到最后一张的最后一节
-			clearInterval(this.timer);
-		} else {
-			this.autoGetAnswer(3000);
-		} 
-	};
+                  resolve(JSON.parse(resObj.value));
 
-	// 跳转到下一个章节
-	Answer.fn.toNextChapter = function () {
-		this.curErrorTotalQuestions = 0;
-		this.curChapterAllErrors = 0;
-		this.arrChapters[ this.curChapterIndex ].finishSign = true; // 将本章的刷题完成标志设置为true
-		this.curChapterIndex++;
-		this.toSetChapter(this.curChapterIndex);
-	};
+            } catch(e) {
+                reject(e);
+            }
+        });
 
-	// 触发章的onchange事件后自动更新了小节，所以不再需要自定义更新小节
-	Answer.fn.changeSection = function () {};
+        p.then(function (cChapterIDObj) {
+                return cChapterIDObj;
+            })
+            .then(function (cChapterIDObj) {
 
-	// 处理有错误的章节，不能进入正常自动刷题流程
-	Answer.fn.dealErrorChapter = function () {
-		var curChapterIndex = this.curChapterIndex;
-		if (this.arrErrorChapters.indexOf(++curChapterIndex) > -1) {
-			this.toNextChapter();
-		}
-	};
+                var arrCProgramIDPromise = [];
 
-	// 遍历查询，得出符合的答案再进行处理
-	Answer.fn.getAnswer = function () {
-		var arrRets = ['A', 'B', 'C', 'D'],
-				_self = this;
+                for (var i = 0, len = cChapterIDObj.length; i < len; i++) {
+                  arrCProgramIDPromise.push(getCProgramIDPromise(cChapterIDObj[ i ].CProgramID));
+              }
+
+                Promise.all(arrCProgramIDPromise)
+                             .then(function () {
+                                     var arrArgs = [].slice.apply(arguments);
+                                     arrArgs = arrArgs.reduce(function (total, curItem) {
+                                         return total + curItem;
+                                     });
+                                     
+                                     chapterProNum = arrArgs.reduce(function (total, curItem) {
+                                         return total + curItem;
+                                     });
+
+                                     _self.arrChapters[ index ].chapterProNum = chapterProNum;
+                                     _self.curChapterAllErrors = _self.arrChapters[ index ].chapterAllErrors = Math.floor(_self.arrChapters[ index ].chapterProNum * (1 - _self.correctRate));
+                             })
+                             .catch(function (e) {
+                               throw e;
+                             });
+            })
+            .catch(function (e) {
+                console.log(e);
+            });
+    };
+
+    // 检测一章的自动刷题是否结束
+    Answer.fn.validateEnd = function () {
+
+        return this.$promptInfo.innerText.indexOf(this.validateStr) > -1 ? true : false;
+    };
+
+    // 跳转到指定章节
+    Answer.fn.toSetChapter = function (curChapterIndex) {
+        this.$chapter.value = this.arrChapters[ curChapterIndex ].chapterValue;
+        this.getChapterProNum(this.$chapter.value, curChapterIndex);
+
+        Answer.trigger(this.$chapter, 'onchange');
+
+        this.dealErrorChapter(); // 处理有错误的章节
+
+        if (this.isEnd() === true) { // 检测题目是否已经刷到最后一张的最后一节
+            clearInterval(this.timer);
+        } else {
+            this.autoGetAnswer(3000);
+        } 
+    };
+
+    // 跳转到下一个章节
+    Answer.fn.toNextChapter = function () {
+        this.curErrorTotalQuestions = 0;
+        this.curChapterAllErrors = 0;
+        this.arrChapters[ this.curChapterIndex ].finishSign = true; // 将本章的刷题完成标志设置为true
+        this.curChapterIndex++;
+        this.toSetChapter(this.curChapterIndex);
+    };
+
+    // 触发章的onchange事件后自动更新了小节，所以不再需要自定义更新小节
+    Answer.fn.changeSection = function () {};
+
+    // 处理有错误的章节，不能进入正常自动刷题流程
+    Answer.fn.dealErrorChapter = function () {
+        var curChapterIndex = this.curChapterIndex;
+        if (this.arrErrorChapters.indexOf(++curChapterIndex) > -1) {
+            this.toNextChapter();
+        }
+    };
+
+    // 遍历查询，得出符合的答案再进行处理
+    Answer.fn.getAnswer = function () {
+        var arrRets = ['A', 'B', 'C', 'D'],
+                _self = this;
 
     var p = new Promise(function (resolve, reject) {
-    	var strTestParam = '',
-    			resObj = null,
-    			ret = null;
+        var strTestParam = '',
+                resObj = null,
+                ret = null;
 
-  		try {
-    	  for (var i = 0; i <= 3; i++) {
-	    		strTestParam = '<cTestParam><cQuestion>' + _self.$mainFrame.cQuestionID.value + '</cQuestion><cUserAnswer>' + arrRets[ i ] + '</cUserAnswer></cTestParam>';
-	    		resObj = _self.$mainFrame.CExam.CPractice.IsOrNotTrue(strTestParam);
-	    		ret = null;
+          try {
+          for (var i = 0; i <= 3; i++) {
+                strTestParam = '<cTestParam><cQuestion>' + _self.$mainFrame.cQuestionID.value + '</cQuestion><cUserAnswer>' + arrRets[ i ] + '</cUserAnswer></cTestParam>';
+                resObj = _self.$mainFrame.CExam.CPractice.IsOrNotTrue(strTestParam);
+                ret = null;
 
-	    		if(resObj.value) {
-	    		  if (_self.validateEnd()) { // 检测该章的题目是否已经刷完
-	    		    ret = false;
-	    		  } else {
-	    		  	if (_self.chapterCount !== 0 && _self.chapterCount % 5 === 0 && _self.curErrorTotalQuestions < _self.curChapterAllErrors) {
-	    		  		ret = arrRets[ ++i ] !== undefined ? arrRets[ i ] : arrRets[ --i ]; // 避免数组越界
-	    		  		_self.curErrorTotalQuestions++;
-	    		  	} else {
-	    		  		ret = arrRets[ i ];
-	    		  	}
-	    		  }
-	    		  resolve(ret);
-	    		  break;
-	    		}
-    	  }
-  		} catch(e) {
-  			reject(e);
-  		}
+                if(resObj.value) {
+                  if (_self.validateEnd()) { // 检测该章的题目是否已经刷完
+                    ret = false;
+                  } else {
+                      if (_self.chapterCount !== 0 && _self.chapterCount % 5 === 0 && _self.curErrorTotalQuestions < _self.curChapterAllErrors) {
+                          ret = arrRets[ ++i ] !== undefined ? arrRets[ i ] : arrRets[ --i ]; // 避免数组越界
+                          _self.curErrorTotalQuestions++;
+                      } else {
+                          ret = arrRets[ i ];
+                      }
+                  }
+                  resolve(ret);
+                  break;
+                }
+          }
+          } catch(e) {
+              reject(e);
+          }
     });
     
     p.then(function (ret) {
-    		if (ret) { // 符合的答案才进行答案的最终确认——录入数据库
-    		  _self.$mainFrame.makeChoice(ret);
-    		  _self.chapterCount++;
-    		  if (_self.chapterCount % 6 === 0 && _self.curErrorTotalQuestions <= _self.curChapterAllErrors) {
-    		  	_self.curErrorTotalQuestions = _self.curErrorTotalQuestions === _self.curChapterAllErrors ? ++_self.curErrorTotalQuestions : _self.curErrorTotalQuestions;
-    		  	Answer.trigger(_self.mainFrameWindow.document.getElementsByClassName('normalButton')[ 1 ], 'onclick'); // 触发下一题按钮
-    		  }
-    		} else {
-    		  clearInterval(_self.timer);
-    		  _self.toNextChapter();
-    		}
-    	})
-    	.catch(function (e) {
-    		console.log(e);
-    	});
-	};
+            if (ret) { // 符合的答案才进行答案的最终确认——录入数据库
+              _self.$mainFrame.makeChoice(ret);
+              _self.chapterCount++;
+              if (_self.chapterCount % 6 === 0 && _self.curErrorTotalQuestions <= _self.curChapterAllErrors) {
+                  _self.curErrorTotalQuestions = _self.curErrorTotalQuestions === _self.curChapterAllErrors ? ++_self.curErrorTotalQuestions : _self.curErrorTotalQuestions;
+                  Answer.trigger(_self.mainFrameWindow.document.getElementsByClassName('normalButton')[ 1 ], 'onclick'); // 触发下一题按钮
+              }
+            } else {
+              clearInterval(_self.timer);
+              _self.toNextChapter();
+            }
+        })
+        .catch(function (e) {
+            console.log(e);
+        });
+    };
 
-	// 创建自动查询定时器
-	Answer.fn.autoGetAnswer = function (duringTime) {
-		var _self = this;
+    // 创建自动查询定时器
+    Answer.fn.autoGetAnswer = function (duringTime) {
+        var _self = this;
 
-		clearInterval(this.timer);
-		this.timer = setInterval(function () {
-			_self.getAnswer();
-		}, duringTime);
-	};
+        clearInterval(this.timer);
+        this.timer = setInterval(function () {
+            _self.getAnswer();
+        }, duringTime);
+    };
 
-	// 打印自动刷题脚本的使用说明
-	Answer.fn.printScriptUsage = function () {
+    // 打印自动刷题脚本的使用说明
+    Answer.fn.printScriptUsage = function () {
 
-		console.log("\n/*\n*\t \t\t  #####  #####    # #\n*\t \t\t   #      #      #   #\n*\t  #\t  #  #   #      # #\n*\t   # #    # # \u2014\u2014\u2014\u2014 #\n*\n* GitHub: https://github.com/wupengju/The-question-bank-script\n* \u6D4F\u89C8\u5668\u652F\u6301\uFF1Ahttp://caniuse.com/#search=Promise\n* \n* \u81EA\u52A8\u5237\u9898\u811A\u672C\u7684\u4F7F\u7528\u8BF4\u660E\n* \u542F\u52A8\u6267\u884C\u811A\u672C\uFF1A\n* \t1. answer.start() \uFF1A\u5747\u4F7F\u7528\u9ED8\u8BA4\u53C2\u6570\u5237\u9898\u7AE0\u8282\u6570\u4ECE\u5F53\u524D\u7AE0\u8282\u76F4\u5230\u5237\u5B8C\u4E3A\u6B62 \u548C \u6B63\u786E\u7387\u4E3A 95%\n* \t2. answer.start(1, 2) \uFF1A\u81EA\u5B9A\u4E49\u5237\u9898\u7AE0\u8282\u6570 1-2\n* \t3. answer.start(90) \uFF1A\u81EA\u5B9A\u4E49\u6B63\u786E\u7387\u4F4D 90%\n* \t4. answer.start(1, 2, 90) \uFF1A\u81EA\u5B9A\u4E49\u5237\u9898\u7AE0\u8282\u6570 1-2 \u548C \u6B63\u786E\u7387\u4F4D 90%\n* \t5. answer.start(90, 1, 2) \uFF1A\u81EA\u5B9A\u4E49\u6B63\u786E\u7387\u4F4D 90% \u548C \u5237\u9898\u7AE0\u8282\u6570 1-2\n* \u91CD\u65B0\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.reStart();\n* \u6682\u505C\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.pause();\n* \u505C\u6B62\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.stop();\n*/");
-	};
+        console.log("\n/*\n*\t \t\t  #####  #####    # #\n*\t \t\t   #      #      #   #\n*\t  #\t  #  #   #      # #\n*\t   # #    # # \u2014\u2014\u2014\u2014 #\n*\n* GitHub: https://github.com/wupengju/The-question-bank-script\n* \u6D4F\u89C8\u5668\u652F\u6301\uFF1Ahttp://caniuse.com/#search=Promise\n* \n* \u81EA\u52A8\u5237\u9898\u811A\u672C\u7684\u4F7F\u7528\u8BF4\u660E\n* \u542F\u52A8\u6267\u884C\u811A\u672C\uFF1A\n* \t1. answer.start() \uFF1A\u5747\u4F7F\u7528\u9ED8\u8BA4\u53C2\u6570\u5237\u9898\u7AE0\u8282\u6570\u4ECE\u5F53\u524D\u7AE0\u8282\u76F4\u5230\u5237\u5B8C\u4E3A\u6B62 \u548C \u6B63\u786E\u7387\u4E3A 95%\n* \t2. answer.start(1, 2) \uFF1A\u81EA\u5B9A\u4E49\u5237\u9898\u7AE0\u8282\u6570 1-2\n* \t3. answer.start(90) \uFF1A\u81EA\u5B9A\u4E49\u6B63\u786E\u7387\u4F4D 90%\n* \t4. answer.start(1, 2, 90) \uFF1A\u81EA\u5B9A\u4E49\u5237\u9898\u7AE0\u8282\u6570 1-2 \u548C \u6B63\u786E\u7387\u4F4D 90%\n* \t5. answer.start(90, 1, 2) \uFF1A\u81EA\u5B9A\u4E49\u6B63\u786E\u7387\u4F4D 90% \u548C \u5237\u9898\u7AE0\u8282\u6570 1-2\n* \u91CD\u65B0\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.reStart();\n* \u6682\u505C\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.pause();\n* \u505C\u6B62\u6267\u884C\u811A\u672C\uFF1A\n* \tanswer.stop();\n*/");
+    };
 
-	// 开启自动刷题
-	Answer.fn.start = function () {
+    // 开启自动刷题
+    Answer.fn.start = function () {
 
-		var defaultEndChapter = this.$chapterOptions.length,
-			  _self = this;
-
-
-		/**
-		 * 检测参数是否符合要求
-		 * @param  {[Array]} 		arg 	参数类数组对象
-		 * @return {[Boolean]}  true  参数满足条件
-		 * @return {[Boolean]}  false 参数不满足条件
-		 */
-		function detectArguments(arg) {
-
-			for (var i = 0, len = arg.length; i < len; i++) {
-				if (!Answer.detectDataTypes(arg[ i ], 'Number')) {
-					return false;
-				}
-			}
-
-			return true;
-		}
+        var defaultEndChapter = this.$chapterOptions.length,
+              _self = this;
 
 
-		/**
-		 * 检测章数目的start和end是否符合
-		 * @param  {[Number]}  startChapterIndex 开始章数的index
-		 * @param  {[Number]}  endChapterIndex   结束章数的index
-		 * @return {[Boolean]} true         开始和结束章数的index都符合
-		 * @return {[Boolean]} false        开始或结束章数的index都不符合
-		 */
-		function detectChapterIndex(startChapterIndex, endChapterIndex) {
-			return (startChapterIndex >= 0 && startChapterIndex <= defaultEndChapter) && (endChapterIndex >= 0 && endChapterIndex <= defaultEndChapter) && startChapterIndex <= endChapterIndex? true : false;
-		}
+        /**
+         * 检测参数是否符合要求
+         * @param  {[Array]}         arg     参数类数组对象
+         * @return {[Boolean]}  true  参数满足条件
+         * @return {[Boolean]}  false 参数不满足条件
+         */
+        function detectArguments(arg) {
+
+            for (var i = 0, len = arg.length; i < len; i++) {
+                if (!Answer.detectDataTypes(arg[ i ], 'Number')) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
 
-		/**
-		 * 检测自定义正确率是否符合
-		 * @param  {[Number]}  rate  自定义正确率
-		 * @return {[Boolean]} true  自定义正确率符合
-		 * @return {[Boolean]} false 自定义正确率不符合
-		 */
-		function detectCorrectRate(rate) {
-			return rate >= 90 && rate <= 99 ? true : false;
-		}
+        /**
+         * 检测章数目的start和end是否符合
+         * @param  {[Number]}  startChapterIndex 开始章数的index
+         * @param  {[Number]}  endChapterIndex   结束章数的index
+         * @return {[Boolean]} true         开始和结束章数的index都符合
+         * @return {[Boolean]} false        开始或结束章数的index都不符合
+         */
+        function detectChapterIndex(startChapterIndex, endChapterIndex) {
+            return (startChapterIndex >= 0 && startChapterIndex <= defaultEndChapter) && (endChapterIndex >= 0 && endChapterIndex <= defaultEndChapter) && startChapterIndex <= endChapterIndex? true : false;
+        }
 
 
-		/**
-		 * 检测三个参数都同时传入时是否符合
-		 * @param  {[Number]} rate         自定义正确率
-		 * @param  {[Number]} startChapterIndex 开始章数的index
-		 * @param  {[Number]} endChapterIndex   结束章数的index
-		 * @return {[Boolean]} true  			 三个参数都符合
-		 * @return {[Boolean]} false 			 三个参数其中或全部不符合
-		 */
-		function detectThreeArgs(rate, startChapterIndex, endChapterIndex) {
-			return arguments.length === 3 && detectArguments(arguments) && detectCorrectRate(rate) && detectChapterIndex(startChapterIndex, endChapterIndex) ? true : false;
-		}
+        /**
+         * 检测自定义正确率是否符合
+         * @param  {[Number]}  rate  自定义正确率
+         * @return {[Boolean]} true  自定义正确率符合
+         * @return {[Boolean]} false 自定义正确率不符合
+         */
+        function detectCorrectRate(rate) {
+            return rate >= 90 && rate <= 99 ? true : false;
+        }
 
 
-		/**
-		 * 抽离三个参数的赋值语句
-		 * @param {[Number]} startChapterIndex 开始章数的index
-		 * @param {[Number]} endChapterIndex   结束章数的index
-		 * @param {[Number]} correctRate  自定义正确率
-		 */
-		function setValues(startChapterIndex, endChapterIndex, correctRate) {
-			_self.startChapterIndex = startChapterIndex - 1; // 自定义刷题开始章数
-			_self.endChapterIndex = endChapterIndex - 1; // 自定义刷题结束章数
-			_self.correctRate = correctRate; // 自定义刷题符合率
-		}
+        /**
+         * 检测三个参数都同时传入时是否符合
+         * @param  {[Number]} rate         自定义正确率
+         * @param  {[Number]} startChapterIndex 开始章数的index
+         * @param  {[Number]} endChapterIndex   结束章数的index
+         * @return {[Boolean]} true               三个参数都符合
+         * @return {[Boolean]} false              三个参数其中或全部不符合
+         */
+        function detectThreeArgs(rate, startChapterIndex, endChapterIndex) {
+            return arguments.length === 3 && detectArguments(arguments) && detectCorrectRate(rate) && detectChapterIndex(startChapterIndex, endChapterIndex) ? true : false;
+        }
 
 
-		/**
-		 * 将重复执行代码片段抽离为单独的函数
-		 * @param  {[Number]} startChapterIndex 开始章数的index
-		 */
-		function excuteMoreArgs(startChapterIndex) {
-			_self.rewriteCurChapterIndex(startChapterIndex);
-			_self.toSetChapter(startChapterIndex);
-		}
+        /**
+         * 抽离三个参数的赋值语句
+         * @param {[Number]} startChapterIndex 开始章数的index
+         * @param {[Number]} endChapterIndex   结束章数的index
+         * @param {[Number]} correctRate  自定义正确率
+         */
+        function setValues(startChapterIndex, endChapterIndex, correctRate) {
+            _self.startChapterIndex = startChapterIndex - 1; // 自定义刷题开始章数
+            _self.endChapterIndex = endChapterIndex - 1; // 自定义刷题结束章数
+            _self.correctRate = correctRate; // 自定义刷题符合率
+        }
 
 
-		// 给$chapter绑定change的自定义事件处理程序
-		this.$chapter.addEventListener('change', function () {
-			_self.rewriteCurChapterIndex();
-			_self.dealErrorChapter();
-		});
+        /**
+         * 将重复执行代码片段抽离为单独的函数
+         * @param  {[Number]} startChapterIndex 开始章数的index
+         */
+        function excuteMoreArgs(startChapterIndex) {
+            _self.rewriteCurChapterIndex(startChapterIndex);
+            _self.toSetChapter(startChapterIndex);
+        }
 
-		if (arguments.length === 0) { // 均采用默认参数
-			setValues(1, defaultEndChapter - 1, 0.95);
-			excuteMoreArgs(this.startChapterIndex);
-			return;
-		}
-		if (arguments.length === 1 && detectArguments(arguments) && detectCorrectRate(arguments[ 0 ])) { // answer.start(90)
-			setValues(1, defaultEndChapter - 1, (arguments[ 0 ] * 0.01).toFixed(2));
-			excuteMoreArgs(this.startChapterIndex);
-			return;
-		}
-		if (arguments.length === 2 && detectArguments(arguments) && detectChapterIndex(arguments[ 0 ], arguments[ 1 ])) { // answer.start(1, 2)
-			setValues(Math.ceil(arguments[ 0 ]), Math.floor(arguments[ 1 ]), 0.95);
-			excuteMoreArgs(this.startChapterIndex);
-			return;
-		}
-		if (detectThreeArgs(arguments[ 0 ], arguments[ 1 ], arguments[ 2 ])) { // answer.start(90, 1 ,2)
-			setValues(Math.ceil(arguments[ 1 ]), Math.floor(arguments[ 2 ]), (arguments[ 0 ] * 0.01).toFixed(2));
-			excuteMoreArgs(this.startChapterIndex);
-			return;
-		}
-		if (detectThreeArgs(arguments[ 2 ], arguments[ 0 ], arguments[ 1 ])) { // answer.start(1, 2, 90)
-			setValues(Math.ceil(arguments[ 0 ]), Math.floor(arguments[ 1 ]), (arguments[ 2 ] * 0.01).toFixed(2));
-			excuteMoreArgs(this.startChapterIndex);
-			return;
-		} else {
-			console.log('请输入符合规范的开始调用参数.');
-			return false;
-		}
-	};
 
-	// 重新开启自动刷题
-	Answer.fn.reStart = function () {
+        // 给$chapter绑定change的自定义事件处理程序
+        this.$chapter.addEventListener('change', function () {
+            _self.rewriteCurChapterIndex();
+            _self.dealErrorChapter();
+        });
 
-		this.autoGetAnswer(3000);
-	};
+        if (arguments.length === 0) { // 均采用默认参数
+            setValues(1, defaultEndChapter - 1, 0.95);
+            excuteMoreArgs(this.startChapterIndex);
+            return;
+        }
+        if (arguments.length === 1 && detectArguments(arguments) && detectCorrectRate(arguments[ 0 ])) { // answer.start(90)
+            setValues(1, defaultEndChapter - 1, (arguments[ 0 ] * 0.01).toFixed(2));
+            excuteMoreArgs(this.startChapterIndex);
+            return;
+        }
+        if (arguments.length === 2 && detectArguments(arguments) && detectChapterIndex(arguments[ 0 ], arguments[ 1 ])) { // answer.start(1, 2)
+            setValues(Math.ceil(arguments[ 0 ]), Math.floor(arguments[ 1 ]), 0.95);
+            excuteMoreArgs(this.startChapterIndex);
+            return;
+        }
+        if (detectThreeArgs(arguments[ 0 ], arguments[ 1 ], arguments[ 2 ])) { // answer.start(90, 1 ,2)
+            setValues(Math.ceil(arguments[ 1 ]), Math.floor(arguments[ 2 ]), (arguments[ 0 ] * 0.01).toFixed(2));
+            excuteMoreArgs(this.startChapterIndex);
+            return;
+        }
+        if (detectThreeArgs(arguments[ 2 ], arguments[ 0 ], arguments[ 1 ])) { // answer.start(1, 2, 90)
+            setValues(Math.ceil(arguments[ 0 ]), Math.floor(arguments[ 1 ]), (arguments[ 2 ] * 0.01).toFixed(2));
+            excuteMoreArgs(this.startChapterIndex);
+            return;
+        } else {
+            console.log('请输入符合规范的开始调用参数.');
+            return false;
+        }
+    };
 
-	// 打印最后的刷题情况
-	Answer.fn.lastResult = function () {
+    // 重新开启自动刷题
+    Answer.fn.reStart = function () {
 
-	  var finishChapter = '已完成：',
-	  		noFinishChapter = '未完成：',
-	  		curChapter = null;
+        this.autoGetAnswer(3000);
+    };
 
-	  for (var i = 0, len = this.arrChapters.length; i < len; i++) {
-	  	curChapter = this.arrChapters[ i ];
-	  	if (curChapter.finishSign) {
-	  		finishChapter += curChapter.chapterName + '、';
-	  	} else {
-	  		noFinishChapter += curChapter.chapterName + '、';
-	  	}
-	  }
+    // 打印最后的刷题情况
+    Answer.fn.lastResult = function () {
 
-	  console.log('刷题情况统计：');
-	  console.log(finishChapter);
-	  console.log(noFinishChapter);
-	};
+      var finishChapter = '已完成：',
+              noFinishChapter = '未完成：',
+              curChapter = null;
 
-	// 结束自动刷题
-	Answer.fn.isEnd = function () {
+      for (var i = 0, len = this.arrChapters.length; i < len; i++) {
+          curChapter = this.arrChapters[ i ];
+          if (curChapter.finishSign) {
+              finishChapter += curChapter.chapterName + '、';
+          } else {
+              noFinishChapter += curChapter.chapterName + '、';
+          }
+      }
 
-	  if (this.curChapterIndex > this.endChapterIndex || (this.curChapterIndex === this.endChapterIndex && this.validateEnd())) {
-			clearInterval(this.timer);
+      console.log('刷题情况统计：');
+      console.log(finishChapter);
+      console.log(noFinishChapter);
+    };
 
-			if (!this.endSign) {
-				this.lastResult();
-				console.log('本次自动刷题完成!');
-				this.endSign = true;
-			}
-			return true;
-	  }
-	};
+    // 结束自动刷题
+    Answer.fn.isEnd = function () {
 
-	// 提供关闭(暂停)脚本执行接口
-	Answer.fn.stop = Answer.fn.pause = function () {
+      if (this.curChapterIndex > this.endChapterIndex || (this.curChapterIndex === this.endChapterIndex && this.validateEnd())) {
+            clearInterval(this.timer);
 
-		clearInterval(this.timer);
-	};
+            if (!this.endSign) {
+                this.lastResult();
+                console.log('本次自动刷题完成!');
+                this.endSign = true;
+            }
+            return true;
+      }
+    };
 
-	window.Answer = Answer;
+    // 提供关闭(暂停)脚本执行接口
+    Answer.fn.stop = Answer.fn.pause = function () {
+
+        clearInterval(this.timer);
+    };
+
+    window.Answer = Answer;
 
 }(window));
 
@@ -562,28 +562,28 @@
  * 执行代码
  */
 ;(function (window) {
-	'use strict';
+    'use strict';
 
-	// 完整传参示例
-	var options = {
-		arrFrames: ['topmain', 'main'], 
-		validateStr: '此章节下的程序已读取结束',
-		chapterSelector: 'cChapter',
-		promptInfoSelector: 'divInfo',
-		arrErrorChapters: [3]
-	};
+    // 完整传参示例
+    var options = {
+        arrFrames: ['topmain', 'main'], 
+        validateStr: '此章节下的程序已读取结束',
+        chapterSelector: 'cChapter',
+        promptInfoSelector: 'divInfo',
+        arrErrorChapters: [3]
+    };
 
-	// 调用传参：参数都是可选参数
-	var answer = null;
-	// answer = Answer(options); // 设置全部参数
-	// answer = Answer(); // 全部采用默认参数
-	answer = Answer({ // 设置部分参数
-		arrErrorChapters: [3]
-	});
-	 
-	answer.printScriptUsage(); // 打印自动刷题脚本的使用说明
+    // 调用传参：参数都是可选参数
+    var answer = null;
+    // answer = Answer(options); // 设置全部参数
+    // answer = Answer(); // 全部采用默认参数
+    answer = Answer({ // 设置部分参数
+        arrErrorChapters: [3]
+    });
+     
+    answer.printScriptUsage(); // 打印自动刷题脚本的使用说明
 
-	// 将answer实例对象也添加到全局对象window，方便用户调用
-	window.answer = answer;
+    // 将answer实例对象也添加到全局对象window，方便用户调用
+    window.answer = answer;
 
 }(window));
